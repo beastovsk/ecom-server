@@ -1,85 +1,93 @@
-const db = require("../database");
+const sql = require("../database");
 const bcrypt = require("bcryptjs");
 const { generateToken, decodeToken } = require("../utils");
 const nodemailer = require("nodemailer");
 const { v4 } = require("uuid");
-const nodemailerConfig = require("../nodeMaller");
+// const nodemailerConfig = require("../nodeMaller");
 
-const transporter = nodemailer.createTransport(nodemailerConfig);
+const transporter = nodemailer.createTransport({
+	service: "gmail",
+	auth: {
+		user: "coctencoflez@gmail.com",
+		pass: "wczs ypxh deyx exuo",
+	},
+});
 
 const authController = {
 	login: async (req, res) => {
 		try {
 			const { email, password } = req.body;
-			const user = await db.query(
-				`SELECT * FROM "user" WHERE email = $1`,
-				[email]
-			);
+			console.log(true);
+			const userList =
+				await sql`SELECT * FROM "users" WHERE email = ${email}`;
 
-			if (user.rows.length === 0) {
+			if (userList.length === 0) {
 				return res
-					.status(400)
+					.status(200)
 					.json({ message: "Пользователь не найден" });
 			}
-			if (!user.rows[0].is_confirmed) {
-				return res.status(400).json({
+
+			const user = userList[0];
+
+			if (!user.is_confirmed) {
+				return res.status(200).json({
 					message:
 						"Аккаунт не подтвержден. Проверьте вашу почту для подтверждения регистрации",
 				});
 			}
-			const checkPass = await bcrypt.compare(
-				password,
-				user.rows[0].password
-			);
+
+			const checkPass = await bcrypt.compare(password, user.password);
 			if (!checkPass) {
-				return res.status(400).json({ message: "Неверный пароль" });
+				return res.status(200).json({ message: "Неверный пароль" });
 			}
 
 			const token = generateToken({
-				id: user.rows[0].id,
-				email: user.rows[0].email,
+				id: user.id,
+				email: user.email,
 			});
-			res.json({ token, message: "Вы успешно авторизовались" });
+			res.json({
+				token,
+				message: "Вы успешно авторизовались",
+			});
 		} catch (error) {
+			console.log(error);
 			res.status(500).json({ error: "Ошибка авторизации" });
 		}
 	},
 	register: async (req, res) => {
 		try {
 			const { email, password } = req.body;
-			const existingUser = await db.query(
-				`SELECT * FROM "user" WHERE email = $1`,
-				[email]
-			);
+			const existingUser =
+				await sql`SELECT * FROM "users" WHERE email = ${email}`;
 
-			if (existingUser && existingUser.rows.length > 0) {
-				if (!existingUser.rows[0].is_confirmed) {
+			if (existingUser.length > 0) {
+				const user = existingUser[0];
+				if (!user.is_confirmed) {
 					return res
-						.status(400)
+						.status(200)
 						.json({ message: "Подтвердите почту" });
 				}
-
 				return res
-					.status(400)
+					.status(200)
 					.json({ message: "Этот пользователь уже зарегистрирован" });
 			}
 
 			const hash = await bcrypt.hash(password, 10);
-			const confirmToken = v4().split("-")[0]; 
+			const confirmToken = v4().split("-")[0];
 
-			await db.query(
-				`INSERT INTO "user" (email, password, is_confirmed, confirm_token) VALUES ($1, $2, $3, $4) RETURNING id, email`,
-				[email, hash, 0, confirmToken]
-			);
+			await sql`
+				INSERT INTO "users" (email, password, is_confirmed, confirm_token)
+				VALUES (${email}, ${hash}, ${0}, ${confirmToken})
+			`;
 
 			const mailBody = `
 				<div>
-					<h1 style='color: #6f4ff2'>WEBI Marketplace</h1>
+					<h1 style='color: #111'>Startup Idea</h1>
 					<h2>
-						Ваш <i style='color: #6f4ff2'>код</i> для подтверждения почты:</h2>
+						Ваш <i style='color: #111'>код</i> для подтверждения почты:</h2>
 					<br/> 
 					<h3>
-						<b style='color: #6f4ff2' class='token'>${confirmToken}</b>
+						<b style='color: #ccc' class='token'>${confirmToken}</b>
 					</h3>
 				</div>
 			`;
@@ -111,27 +119,23 @@ const authController = {
 	},
 	confirmEmail: async (req, res) => {
 		try {
-			const { confirmToken } = req.body;
+			const { email: userEmail, confirmToken } = req.body;
+			const user =
+				await sql`SELECT * FROM "users" WHERE confirm_token = ${confirmToken} AND email = ${userEmail}`;
 
-			const user = await db.query(
-				`SELECT * FROM "user" WHERE confirm_token = $1`,
-				[confirmToken]
-			);
-
-			if (!user.rows.length) {
+			if (user.length === 0) {
 				return res
-					.status(400)
+					.status(200)
 					.json({ message: "Неверный код подтверждения" });
 			}
 
-			const [{ email, id }] = user.rows;
+			const [{ email, id }] = user;
 
-			const token = await generateToken({ id, email });
+			const token = generateToken({ id, email });
 
-			await db.query(
-				`UPDATE "user" SET is_confirmed = true WHERE confirm_token = $1`,
-				[confirmToken]
-			);
+			await sql`
+			UPDATE "users" SET is_confirmed = true WHERE confirm_token = ${confirmToken}
+		`;
 
 			res.json({ message: "Почта подтверждена", token });
 		} catch (error) {
@@ -140,85 +144,98 @@ const authController = {
 		}
 	},
 	sendResetCode: async (req, res) => {
-		const { email } = req.body;
+		try {
+			const { email } = req.body;
 
-		const user = await db.query(`SELECT * FROM "user" WHERE email = $1`, [
-			email,
-		]);
+			const user =
+				await sql`SELECT * FROM "users" WHERE email = ${email}`;
 
-		if (!user.rows.length) {
-			return res.status(400).json({ message: "Пользователь не найден" });
-		}
-
-		const [{ confirm_token }] = user.rows;
-
-		const confirmSlicedToken = confirm_token.slice(0, -2) + "rp";
-
-		const mailBody = `
-				<div>
-					<h1 style='color: #6f4ff2'>WEBI Marketplace</h1>
-					<h2>
-						Ваш <i style='color: #6f4ff2'>код</i> для восстановления пароля:</h2>
-					<br/>
-					<h3>
-						<b style='color: #6f4ff2' class='token'>${confirmSlicedToken}</b>
-					</h3>
-				</div>
-			`;
-
-		const mailOptions = {
-			from: "Webi",
-			to: email,
-			html: mailBody,
-			subject: "Восстановление пароля",
-		};
-
-		transporter.sendMail(mailOptions, (error, info) => {
-			if (error) {
-				console.error("Ошибка отправки электронной почты:", error);
-				res.status(500).json({
-					error: "Ошибка отправки электронной почты",
-				});
-			} else {
-				res.json({
-					message:
-						"Код для восстановление пароля отправлен на вашу почту",
-				});
+			if (user.length === 0) {
+				return res
+					.status(200)
+					.json({ message: "Пользователь не найден" });
 			}
-		});
 
-		res.json({ message: "Код подтверждения отправлен на почту" });
+			const [{ confirm_token }] = user;
+
+			const confirmSlicedToken = confirm_token.slice(0, -2) + "rp";
+
+			const mailBody = `
+			<div>
+				<h1 style='color: #4880ff'>Marketing Helper</h1>
+				<h2>
+					Ваш <i style='color: #4880ff'>код</i> для восстановления пароля:</h2>
+				<br/>
+				<h3>
+					<b style='color: #4880ff' class='token'>${confirmSlicedToken}</b>
+				</h3>
+			</div>
+		`;
+
+			const mailOptions = {
+				from: "Webi",
+				to: email,
+				html: mailBody,
+				subject: "Восстановление пароля",
+			};
+
+			transporter.sendMail(mailOptions, (error, info) => {
+				if (error) {
+					console.error("Ошибка отправки электронной почты:", error);
+					res.status(500).json({
+						error: "Ошибка отправки электронной почты",
+					});
+				} else {
+					res.json({
+						message:
+							"Код для восстановление пароля отправлен на вашу почту",
+					});
+				}
+			});
+		} catch (error) {
+			console.error(
+				"Ошибка отправки кода для восстановления пароля:",
+				error
+			);
+			res.status(500).json({
+				error: "Ошибка отправки кода для восстановления пароля",
+			});
+		}
 	},
 	resetPassword: async (req, res) => {
 		try {
 			const { email, password, confirmToken } = req.body;
 
-			const user = await db.query(
-				`SELECT * FROM "user" WHERE email = $1`,
-				[email]
-			);
+			const user =
+				await sql`SELECT * FROM "users" WHERE email = ${email}`;
 
-			if (!user.rows.length) {
+			if (user.length === 0) {
 				return res
-					.status(400)
+					.status(200)
 					.json({ message: "Пользователь не найден" });
 			}
 
-			const [{ id }] = user.rows;
+			const [{ id }] = user;
 			const token = generateToken({ email, id });
 			const hash = await bcrypt.hash(password, 10);
 
-			await db.query(
-				`UPDATE "user" SET password = $1 WHERE email = $2 AND confirm_token = $3 RETURNING email`,
-				[hash, email, confirmToken.slice(0, -2) + "rp"]
-			);
+			const result = await sql`
+         UPDATE "users" SET password = ${hash} WHERE email = ${email}
+    `;
+
+			if (result.affectedRows === 0) {
+				return res
+					.status(200)
+					.json({ message: "Неверный код подтверждения" });
+			}
 
 			res.json({ token, message: "Пароль успешно изменен" });
 		} catch (error) {
-			console.error("Ошибка регистрации:", error);
-			res.status(500).json({ error: "Ошибка регистрации" });
+			console.error("Ошибка сброса пароля:", error);
+			res.status(500).json({ error: "Ошибка сброса пароля" });
 		}
 	},
+
 	supportRequest: async (req, res) => {
 		try {
 			const { email, body, name } = req.body;

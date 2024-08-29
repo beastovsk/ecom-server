@@ -1,31 +1,28 @@
-const db = require("../database");
+const sql = require("../database");
 const bcrypt = require("bcryptjs");
 const { generateToken, decodeToken } = require("../utils");
+const { v4: uuidv4 } = require("uuid");
 
 const userController = {
 	getUser: async (req, res) => {
 		try {
-			// Get token, sliced "Bearer" label
 			const [_, token] = req.headers.authorization.split(" ");
 			const { email } = decodeToken({ token });
-
-			const result = await db.query(
-				`SELECT * FROM "user" WHERE email = $1`,
-				[email]
-			);
-
-			if (result.rows.length === 0) {
+			const result =
+				await sql`SELECT * FROM "users" WHERE email = ${email}`;
+			if (result.length === 0) {
 				return res
-					.status(400)
+					.status(200)
 					.json({ message: "Пользователь не найден" });
 			}
 
 			const { password, is_confirmed, confirm_token, ...user } =
-				result.rows[0];
+				result[0];
 
 			res.json({ user });
 		} catch (error) {
-			res.status(500).json({ error: "Ошибка авторизации" });
+			console.log(error);
+			res.status(200).json({ user: null });
 		}
 	},
 	changeEmail: async (req, res) => {
@@ -36,39 +33,27 @@ const userController = {
 
 			if (decodedEmail !== currentEmail) {
 				return res
-					.status(400)
+					.status(200)
 					.json({ message: "Некорректная текущая почта" });
 			}
 
-			const result = await db.query(
-				`SELECT * FROM "user" WHERE email = $1`,
-				[decodedEmail]
-			);
+			const result =
+				await sql`SELECT * FROM "users" WHERE email = ${decodedEmail}`;
 
-			if (result.rows.length === 0) {
+			if (result.length === 0) {
 				return res
-					.status(400)
+					.status(200)
 					.json({ message: "Пользователь не найден" });
 			}
 
-			const [user] = result.rows;
+			const user = result[0];
 
-			bcrypt.compare(
-				password,
-				user.password,
-				(err, isSamePasswords, next) => {
-					if (!isSamePasswords) {
-						return res
-							.status(400)
-							.json({ message: "Некорректный пароль" });
-					}
-				}
-			);
+			const checkPass = await bcrypt.compare(password, user.password);
+			if (!checkPass) {
+				return res.status(200).json({ message: "Некорректный пароль" });
+			}
 
-			db.query(`UPDATE "user" SET email = $1 WHERE email = $2`, [
-				newEmail,
-				currentEmail,
-			]);
+			await sql`UPDATE "users" SET email = ${newEmail} WHERE email = ${currentEmail}`;
 
 			const updatedToken = generateToken({
 				id: user.id,
@@ -87,60 +72,33 @@ const userController = {
 		try {
 			const { currentPassword, password } = req.body;
 			const [_, token] = req.headers.authorization.split(" ");
-			const { email, id } = decodeToken({ token });
+			const { email } = decodeToken({ token });
 
-			const result = await db.query(
-				`SELECT * FROM "user" WHERE email = $1`,
-				[email]
-			);
+			const result =
+				await sql`SELECT * FROM "users" WHERE email = ${email}`;
 
-			if (result.rows.length === 0) {
+			if (result.length === 0) {
 				return res
-					.status(400)
+					.status(200)
 					.json({ message: "Пользователь не найден" });
 			}
 
-			const [user] = result.rows;
+			const user = result[0];
 
-			bcrypt.compare(
+			const checkPass = await bcrypt.compare(
 				currentPassword,
-				user.password,
-				(err, isSamePasswords) => {
-					if (!isSamePasswords) {
-						return res
-							.status(400)
-							.json({ message: "Некорректный пароль" });
-					}
-				}
+				user.password
 			);
+			if (!checkPass) {
+				return res.status(200).json({ message: "Некорректный пароль" });
+			}
 
-			const hashedPassword = bcrypt.hash(password, 10);
+			const hashedPassword = await bcrypt.hash(password, 10);
 
-			await db.query(`UPDATE "user" SET password = $1 WHERE email = $2`, [
-				hashedPassword,
-				email,
-			]);
+			await sql`UPDATE "users" SET password = ${hashedPassword} WHERE email = ${email}`;
 
 			res.json({
 				message: "Пароль успешно изменен",
-			});
-		} catch (error) {
-			res.status(500).json({ error: "Ошибка сервера" });
-		}
-	},
-	updateSubscription: async (req, res) => {
-		try {
-			res.json({
-				message: "Подписка успешно оформлена",
-			});
-		} catch (error) {
-			res.status(500).json({ error: "Ошибка сервера" });
-		}
-	},
-	removeSubscription: async (req, res) => {
-		try {
-			res.json({
-				message: "Подписка успешно отменена",
 			});
 		} catch (error) {
 			res.status(500).json({ error: "Ошибка сервера" });
