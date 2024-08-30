@@ -25,6 +25,19 @@ const userController = {
 			res.status(200).json({ user: null });
 		}
 	},
+	getAllUsers: async (req, res) => {
+		try {
+			const result = await sql`SELECT * FROM "users"`;
+			if (result.length === 0) {
+				return res.status(200).json({ message: "Пользователи не найдены" });
+			}
+			const users = result.map(({ password, is_confirmed, confirm_token, ...user }) => user);
+			res.json({ users });
+		} catch (error) {
+			console.log(error);
+			res.status(500).json({ error: "Ошибка сервера" });
+		}
+	},
 	changeEmail: async (req, res) => {
 		try {
 			const { currentEmail, newEmail, password } = req.body;
