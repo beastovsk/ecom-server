@@ -1,118 +1,67 @@
-// const sql = require("../database");
-// const bcrypt = require("bcryptjs");
-// const { generateToken, decodeToken } = require("../utils");
-// const cloudinary = require('cloudinary').v2;
+const sql = require("../database");
+const bcrypt = require("bcryptjs");
+const { generateToken, decodeToken } = require("../utils");
 
-// cloudinary.config({
-//     cloud_name: 'djper8ctg',
-//     api_key: '684511326939733',
-//     api_secret: '70qm4QO6x8KDUOYaam4PdTcDDns'  
-//   });
 
-// const orderСontroller = {
-//     getProductById: async (req, res) => {
-//         try {
-//             const { id } = req.params;
+const orderСontroller = {
+    createOrder: async (req, res) => {
+        try {
+            const [_, token] = req.headers.authorization.split(" ");
+            
+            const { email } = decodeToken({ token });
+            
+            const userResult = await sql`SELECT * FROM "users" WHERE email = ${email}`;
+            if (userResult.length === 0) {
+                return res.status(404).json({ message: "Пользователь не найден" });
+            }
 
-//             const result = await sql`
-//                 SELECT * FROM "products"
-//                 WHERE id = ${id}`;
-    
-//             if (result.length === 0) {
-//                 return res.status(404).json({ message: "Продукт не найден" });
-//             }
-    
-//             res.json({ product: result[0] });
-//         } catch (error) {
-//             console.log(error);
-//             res.status(500).json({ error: "Ошибка при получении продукта" });
-//         }
-//     },
-//     getAllProducts: async (req, res) => {
-//         try {
-//             const result = await sql`
-//                 SELECT * FROM "PRODUCTS"`;
-    
-//             if (result.length === 0) {
-//                 return res.status(200).json({ message: "Продукты не найдены" });
-//             }
-    
-//             res.json({ products: result });
-//         } catch (error) {
-//             console.log(error);
-//             res.status(500).json({ error: "Ошибка при получении списка продуктов" });
-//         }
-//     },
-// 	createProduct: async (req, res) => {
-//         try {
-//           const { name, description, detailed_description, price, tags, category, images } = req.body;
-    
-//        const uploadedImage = await cloudinary.uploader.upload(images, {
-//         folder: 'https://res.cloudinary.com/demo/image/upload/getting-started/shoes.jpg', 
-//         public_id: name,  
-//         fetch_format: 'auto', 
-//         quality: 'auto' 
-//       });
-    
-//           const imageUrl = uploadedImage.secure_url;
-//           const result = await sql`
-//               INSERT INTO "PRODUCTS" (name, description, detailed_description, price, tags, category, images)
-//               VALUES (${name}, ${description}, ${detailed_description}, ${price}, ${tags}, ${category}, ${imageUrl})
-//               RETURNING *`;
-    
-//           res.status(201).json({ product: result[0] });
-//         } catch (error) {
-//           console.log(error);
-//           res.status(500).json({ error: "Ошибка при создании продукта" });
-//         }
-//       },
-//     updateProduct: async (req, res) => {
-//         try {
-//             const { id } = req.params;
-//             const { name, description, detailed_description, price, tags, category, images } = req.body;
-    
-//             const result = await sql`
-//                 UPDATE "PRODUCTS"
-//                 SET
-//                     name = ${name},
-//                     description = ${description},
-//                     detailed_description = ${detailed_description},
-//                     price = ${price},
-//                     tags = ${tags},
-//                     category = ${category},
-//                     images = ${images}
-//                 WHERE id = ${id}
-//                 RETURNING *`;
-    
-//             if (result.length === 0) {
-//                 return res.status(404).json({ message: "Продукт не найден" });
-//             }
-    
-//             res.json({ product: result[0] });
-//         } catch (error) {
-//             console.log(error);
-//             res.status(500).json({ error: "Ошибка при обновлении продукта" });
-//         }
-//     },
-//     deleteProduct: async (req, res) => {
-//         try {
-//             const { id } = req.params;
-    
-//             const result = await sql`
-//                 DELETE FROM "PRODUCTS"
-//                 WHERE id = ${id}
-//                 RETURNING *`;
-    
-//             if (result.length === 0) {
-//                 return res.status(404).json({ message: "Продукт не найден" });
-//             }
-    
-//             res.json({ message: "Продукт успешно удален" });
-//         } catch (error) {
-//             console.log(error);
-//             res.status(500).json({ error: "Ошибка при удалении продукта" });
-//         }
-//     },
-// };
+            const { id: userId } = userResult[0];
 
-// module.exports = orderСontroller;
+            const { product_id, phone_number, first_name, last_name, additional_info } = req.body;
+
+            if (!product_id || !phone_number || !first_name || !last_name) {
+                return res.status(400).json({ message: "Missing required fields" });
+            }
+
+            const result = await sql`
+                INSERT INTO orders (phone_number, first_name, last_name, product_id, user_id, additional_info)
+                VALUES (${phone_number}, ${first_name}, ${last_name}, ${product_id}, ${userId}, ${additional_info || null})
+                RETURNING *;
+            `;
+
+            res.status(201).json({
+                message: "Заказ составлен!",
+                order: result[0],
+            });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ message: "Internal Server Error" });
+        }
+    }, 
+    getAllOrders: async (req, res) => {
+        try {
+            const orders = await sql`SELECT * FROM "orders"`;
+            res.status(200).json(orders);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ message: "Internal Server Error" });
+        }
+    },
+    getOrderById: async (req, res) => {
+        try {
+            const { id } = req.params;
+
+            const orderResult = await sql`SELECT * FROM "orders" WHERE id = ${id}`;
+            if (orderResult.length === 0) {
+                return res.status(404).json({ message: "Order not found" });
+            }
+
+            res.status(200).json(orderResult[0]);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ message: "Internal Server Error" });
+        }
+    }
+};
+
+module.exports = orderСontroller;
