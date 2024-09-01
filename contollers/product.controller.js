@@ -43,29 +43,49 @@ const orderСontroller = {
             res.status(500).json({ error: "Ошибка при получении списка продуктов" });
         }
     },
-	createProduct: async (req, res) => {
+    createProduct: async (req, res) => {
         try {
-          const { name, description, detailed_description, price, tags, category, images } = req.body;
-    
-       const uploadedImage = await cloudinary.uploader.upload(images, {
-        folder: 'https://res.cloudinary.com/demo/image/upload/getting-started/shoes.jpg', 
-        public_id: name,  
-        fetch_format: 'auto', 
-        quality: 'auto' 
-      });
-    
-          const imageUrl = uploadedImage.secure_url;
-          const result = await sql`
-              INSERT INTO "products" (name, description, detailed_description, price, tags, category, images)
-              VALUES (${name}, ${description}, ${detailed_description}, ${price}, ${tags}, ${category}, ${imageUrl})
-              RETURNING *`;
-    
-          res.status(201).json({ product: result[0] });
+            const { name, description, detailed_description, price, tags, category, images } = req.body;
+
+            // Check if images is an array and contains URLs
+            if (!Array.isArray(images) || images.length === 0) {
+                return res.status(400).json({ error: "No images provided or invalid format" });
+            }
+
+            // Initialize an array to store URLs of uploaded images
+            const uploadedImages = [];
+
+            // Upload each image to Cloudinary and collect the URLs
+            for (const imagePath of images) {
+                const uploadedImage = await cloudinary.uploader.upload(imagePath, {
+                    folder: 'products', // specify a folder in your Cloudinary account
+                    public_id: `${name}_${Date.now()}`,  // optional, unique identifier based on name and timestamp
+                    fetch_format: 'auto', 
+                    quality: 'auto'
+                });
+
+                // Push the uploaded image URL and public_id into the array
+                uploadedImages.push({
+                    url: uploadedImage.secure_url,
+                    public_id: uploadedImage.public_id
+                });
+            }
+
+            // Convert the array of uploaded images to a JSON string
+            const imagesJson = JSON.stringify(uploadedImages);
+
+            // Insert the product with images into the database
+            const result = await sql`
+                INSERT INTO "products" (name, description, detailed_description, price, tags, category, images)
+                VALUES (${name}, ${description}, ${detailed_description}, ${price}, ${tags}, ${category}, ${imagesJson}::json)
+                RETURNING *`;
+
+            res.status(201).json({ product: result[0] });
         } catch (error) {
-          console.log(error);
-          res.status(500).json({ error: "Ошибка при создании продукта" });
+            console.error(error);
+            res.status(500).json({ error: "Ошибка при создании продукта" });
         }
-      },
+    },
     updateProduct: async (req, res) => {
         try {
             const { id } = req.params;
