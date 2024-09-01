@@ -1,4 +1,5 @@
 const sql = require("../database");
+const { v4 } = require('uuid'); 
 const bcrypt = require("bcryptjs");
 const { generateToken, decodeToken } = require("../utils");
 
@@ -8,21 +9,29 @@ const orderСontroller = {
         try {
             const [_, token] = req.headers.authorization.split(" ");
             const { email } = decodeToken({ token });
-
+    
             const userResult = await sql`SELECT * FROM "users" WHERE email = ${email}`;
             if (userResult.length === 0) {
                 return res.status(404).json({ message: "User not found" });
             }
-
-            const { id: userId } = userResult[0];
+    
+            const { id: userId, amountorders } = userResult[0]; 
+            console.log(amountorders);
+            
             const { products, phone_number, first_name, last_name, additional_info } = req.body;
-
+            console.log(products);
+            console.log(phone_number);
+            console.log(first_name);
+            console.log(last_name);
+            console.log(additional_info);
+            
+    
             if (!products || !Array.isArray(products) || products.length === 0 || !phone_number || !first_name || !last_name) {
                 return res.status(400).json({ message: "Missing required fields or products array is empty" });
             }
-
+    
             const productsJson = JSON.stringify(products);
-
+    
             const orderResult = await sql`
                 INSERT INTO orders (user_id, phone_number, first_name, last_name, products, additional_info)
                 VALUES (
@@ -35,7 +44,13 @@ const orderСontroller = {
                 )
                 RETURNING *;
             `;
-
+    
+            await sql`
+                UPDATE users
+                SET amountorders = ${amountorders + 1}
+                WHERE id = ${userId};
+            `;
+    
             res.status(201).json({
                 message: "Order created!",
                 order: orderResult[0],
@@ -45,6 +60,7 @@ const orderСontroller = {
             res.status(500).json({ message: "Internal Server Error" });
         }
     },
+    
 
     getAllOrders: async (req, res) => {
         try {

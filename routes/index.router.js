@@ -7,6 +7,7 @@ const productController = require("../contollers/product.controller");
 const orderController = require('../contollers/order.controller')
 const blogController = require('../contollers/blog.controller')
 const feedbackController = require('../contollers/feedback.controller')
+const adminController = require("../contollers/admin.controller")
 
 router.post("/auth/login", authController.login);
 router.post("/auth/register", authController.register);
@@ -32,5 +33,17 @@ router.put('/blog/updateBlog/:id', blogController.updateBlog);
 router.delete('/blog/deleteBlog/:id', blogController.deleteBlog);
 router.get('/feedback/getAllFeedbacks', feedbackController.getAllFeedbacks);     
 router.post('/feedback/createFeedback', feedbackController.createFeedback);
+router.post('/admin/createMain', adminController.createMain);
+router.post('/admin/updateMain/:id', adminController.updateMain);
+router.get('/admin/getMain', adminController.getMain);
+router.post('/admin/createCategory', adminController.createCategory);
+router.delete('/admin/deleteCategory/:id', adminController.deleteCategory);
+router.get('/admin/getCategories', adminController.getCategories);
+router.post('/admin/createBanner', adminController.createBanner);
+router.delete('/admin/deleteBanner/:id', adminController.deleteBanner);
+router.get('/admin/getBanners', adminController.getBanners);
+router.post('/admin/createDocument', adminController.createDocument);
+router.post('/admin/updateDocument/:id', adminController.updateDocument);
+router.get('/admin/getDocuments', adminController.getDocuments);
 
 module.exports = router;

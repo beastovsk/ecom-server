@@ -55,68 +55,62 @@ const authController = {
 		}
 	},
 	register: async (req, res) => {
-		try {
-			const { email, password } = req.body;
-			const existingUser =
-				await sql`SELECT * FROM "users" WHERE email = ${email}`;
+        try {
+            const { email, password } = req.body;
 
-			if (existingUser.length > 0) {
-				const user = existingUser[0];
-				if (!user.is_confirmed) {
-					return res
-						.status(200)
-						.json({ message: "Подтвердите почту" });
-				}
-				return res
-					.status(200)
-					.json({ message: "Этот пользователь уже зарегистрирован" });
-			}
+            // Check if the user already exists
+            const existingUser = await sql`SELECT * FROM "users" WHERE email = ${email}`;
 
-			const hash = await bcrypt.hash(password, 10);
-			const confirmToken = v4().split("-")[0];
+            if (existingUser.length > 0) {
+                const user = existingUser[0];
+                if (!user.is_confirmed) {
+                    return res.status(200).json({ message: "Подтвердите почту" });
+                }
+                return res.status(200).json({ message: "Этот пользователь уже зарегистрирован" });
+            }
 
-			await sql`
-				INSERT INTO "users" (email, password, is_confirmed, confirm_token)
-				VALUES (${email}, ${hash}, ${0}, ${confirmToken})
-			`;
+            // Hash the password
+            const hash = await bcrypt.hash(password, 10);
+            const confirmToken = v4().split("-")[0]; // Generate a confirmation token
 
-			const mailBody = `
-				<div>
-					<h1 style='color: #111'>Startup Idea</h1>
-					<h2>
-						Ваш <i style='color: #111'>код</i> для подтверждения почты:</h2>
-					<br/> 
-					<h3>
-						<b style='color: #ccc' class='token'>${confirmToken}</b>
-					</h3>
-				</div>
-			`;
+            // Insert the new user into the database
+            await sql`
+                INSERT INTO "users" (email, password, is_confirmed, confirm_token, registerDate, amountOrders)
+                VALUES (${email}, ${hash}, ${false}, ${confirmToken}, CURRENT_TIMESTAMP, 0)
+            `;
 
-			const mailOptions = {
-				from: "Webi",
-				to: email,
-				html: mailBody,
-				subject: "Подтверждение почты",
-			};
+            // Email body for confirmation
+            const mailBody = `
+                <div>
+                    <h1 style='color: #111'>Startup Idea</h1>
+                    <h2>Ваш <i style='color: #111'>код</i> для подтверждения почты:</h2>
+                    <br/> 
+                    <h3><b style='color: #ccc' class='token'>${confirmToken}</b></h3>
+                </div>
+            `;
 
-			transporter.sendMail(mailOptions, (error, info) => {
-				if (error) {
-					console.error("Ошибка отправки электронной почты:", error);
-					res.status(500).json({
-						error: "Ошибка отправки электронной почты",
-					});
-				} else {
-					res.json({
-						message:
-							"Подтверждение регистрации отправлено на вашу почту",
-					});
-				}
-			});
-		} catch (error) {
-			console.error("Ошибка регистрации:", error);
-			res.status(500).json({ error: "Ошибка регистрации" });
-		}
-	},
+            // Mail options
+            const mailOptions = {
+                from: "Webi",
+                to: email,
+                html: mailBody,
+                subject: "Подтверждение почты",
+            };
+
+            // Send the confirmation email
+            transporter.sendMail(mailOptions, (error, info) => {
+                if (error) {
+                    console.error("Ошибка отправки электронной почты:", error);
+                    return res.status(500).json({ error: "Ошибка отправки электронной почты" });
+                } else {
+                    return res.json({ message: "Подтверждение регистрации отправлено на вашу почту" });
+                }
+            });
+        } catch (error) {
+            console.error("Ошибка регистрации:", error);
+            res.status(500).json({ error: "Ошибка регистрации" });
+        }
+    },
 	confirmEmail: async (req, res) => {
 		try {
 			const { email: userEmail, confirmToken } = req.body;
