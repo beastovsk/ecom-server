@@ -1,38 +1,47 @@
 const sql = require("../database");
-const { v4 } = require('uuid'); 
+const { v4 } = require("uuid");
 const bcrypt = require("bcryptjs");
 const { generateToken, decodeToken } = require("../utils");
 
-
 const orderСontroller = {
-    createOrder: async (req, res) => {
-        try {
-            const [_, token] = req.headers.authorization.split(" ");
-            const { email } = decodeToken({ token });
-    
-            const userResult = await sql`SELECT * FROM "users" WHERE email = ${email}`;
-            if (userResult.length === 0) {
-                return res.status(404).json({ message: "User not found" });
-            }
-    
-            const { id: userId, amountorders } = userResult[0]; 
-            console.log(amountorders);
-            
-            const { products, phone_number, first_name, last_name, additional_info } = req.body;
-            console.log(products);
-            console.log(phone_number);
-            console.log(first_name);
-            console.log(last_name);
-            console.log(additional_info);
-            
-    
-            if (!products || !Array.isArray(products) || products.length === 0 || !phone_number || !first_name || !last_name) {
-                return res.status(400).json({ message: "Missing required fields or products array is empty" });
-            }
-    
-            const productsJson = JSON.stringify(products);
-    
-            const orderResult = await sql`
+	createOrder: async (req, res) => {
+		try {
+			const [_, token] = req.headers.authorization.split(" ");
+			const { email } = decodeToken({ token });
+
+			const userResult =
+				await sql`SELECT * FROM "users" WHERE email = ${email}`;
+			if (userResult.length === 0) {
+				return res.status(404).json({ message: "User not found" });
+			}
+
+			const { id: userId, amountorders } = userResult[0];
+
+			const {
+				products,
+				phone_number,
+				first_name,
+				last_name,
+				additional_info,
+			} = req.body;
+
+			if (
+				!products ||
+				!Array.isArray(products) ||
+				products.length === 0 ||
+				!phone_number ||
+				!first_name ||
+				!last_name
+			) {
+				return res.status(400).json({
+					message:
+						"Missing required fields or products array is empty",
+				});
+			}
+
+			const productsJson = JSON.stringify(products);
+
+			const orderResult = await sql`
                 INSERT INTO orders (user_id, phone_number, first_name, last_name, products, additional_info)
                 VALUES (
                     ${userId}, 
@@ -44,72 +53,76 @@ const orderСontroller = {
                 )
                 RETURNING *;
             `;
-    
-            await sql`
+
+			await sql`
                 UPDATE users
                 SET amountorders = ${amountorders + 1}
                 WHERE id = ${userId};
             `;
-    
-            res.status(201).json({
-                message: "Order created!",
-                order: orderResult[0],
-            });
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ message: "Internal Server Error" });
-        }
-    },
-    
 
-    getAllOrders: async (req, res) => {
-        try {
-            const orders = await sql`SELECT * FROM "orders"`;
-            res.status(200).json(orders);
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ message: "Internal Server Error" });
-        }
-    },
+			res.status(201).json({
+				message: "Заказ успешно создан!",
+				order: orderResult[0],
+			});
+		} catch (error) {
+			console.error(error);
+			res.status(500).json({ message: "Internal Server Error" });
+		}
+	},
 
-    getOrderById: async (req, res) => {
-        try {
-            const { id } = req.params;
+	getAllOrders: async (req, res) => {
+		try {
+			const orders = await sql`SELECT * FROM "orders"`;
+			res.status(200).json(orders);
+		} catch (error) {
+			console.error(error);
+			res.status(500).json({ message: "Internal Server Error" });
+		}
+	},
 
-            const orderResult = await sql`SELECT * FROM "orders" WHERE id = ${id}`;
-            if (orderResult.length === 0) {
-                return res.status(404).json({ message: "Order not found" });
-            }
+	getOrderById: async (req, res) => {
+		try {
+			const { id } = req.params;
 
-            res.status(200).json(orderResult[0]);
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ message: "Internal Server Error" });
-        }
-    },
-    getUserOrders: async (req, res) => {
-        try {
-            const [_, token] = req.headers.authorization.split(" ");
-            const { email } = decodeToken({ token });
+			const orderResult =
+				await sql`SELECT * FROM "orders" WHERE id = ${id}`;
+			if (orderResult.length === 0) {
+				return res.status(404).json({ message: "Order not found" });
+			}
 
-            const userResult = await sql`SELECT * FROM "users" WHERE email = ${email}`;
-            if (userResult.length === 0) {
-                return res.status(404).json({ message: "User not found" });
-            }
+			res.status(200).json(orderResult[0]);
+		} catch (error) {
+			console.error(error);
+			res.status(500).json({ message: "Internal Server Error" });
+		}
+	},
+	getUserOrders: async (req, res) => {
+		try {
+			const [_, token] = req.headers.authorization.split(" ");
+			const { email } = decodeToken({ token });
 
-            const { id: userId } = userResult[0];
+			const userResult =
+				await sql`SELECT * FROM "users" WHERE email = ${email}`;
+			if (userResult.length === 0) {
+				return res.status(404).json({ message: "User not found" });
+			}
 
-            const userOrders = await sql`SELECT * FROM "orders" WHERE user_id = ${userId}`;
-            if (userOrders.length === 0) {
-                return res.status(404).json({ message: "No orders found for this user" });
-            }
+			const { id: userId } = userResult[0];
 
-            res.status(200).json(userOrders);
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ message: "Internal Server Error" });
-        }
-    }
+			const userOrders =
+				await sql`SELECT * FROM "orders" WHERE user_id = ${userId}`;
+			if (userOrders.length === 0) {
+				return res
+					.status(404)
+					.json({ message: "No orders found for this user" });
+			}
+
+			res.status(200).json(userOrders);
+		} catch (error) {
+			console.error(error);
+			res.status(500).json({ message: "Internal Server Error" });
+		}
+	},
 };
 
 module.exports = orderСontroller;
