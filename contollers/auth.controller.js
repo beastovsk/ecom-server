@@ -55,62 +55,68 @@ const authController = {
 		}
 	},
 	register: async (req, res) => {
-        try {
-            const { email, password } = req.body;
-
-            // Check if the user already exists
-            const existingUser = await sql`SELECT * FROM "users" WHERE email = ${email}`;
-
-            if (existingUser.length > 0) {
-                const user = existingUser[0];
-                if (!user.is_confirmed) {
-                    return res.status(200).json({ message: "Подтвердите почту" });
-                }
-                return res.status(200).json({ message: "Этот пользователь уже зарегистрирован" });
-            }
-
-            // Hash the password
-            const hash = await bcrypt.hash(password, 10);
-            const confirmToken = v4().split("-")[0]; // Generate a confirmation token
-
-            // Insert the new user into the database
-            await sql`
-                INSERT INTO "users" (email, password, is_confirmed, confirm_token, registerDate, amountOrders)
-                VALUES (${email}, ${hash}, ${false}, ${confirmToken}, CURRENT_TIMESTAMP, 0)
-            `;
-
-            // Email body for confirmation
-            const mailBody = `
-                <div>
-                    <h1 style='color: #111'>Startup Idea</h1>
-                    <h2>Ваш <i style='color: #111'>код</i> для подтверждения почты:</h2>
-                    <br/> 
-                    <h3><b style='color: #ccc' class='token'>${confirmToken}</b></h3>
-                </div>
-            `;
-
-            // Mail options
-            const mailOptions = {
-                from: "Webi",
-                to: email,
-                html: mailBody,
-                subject: "Подтверждение почты",
-            };
-
-            // Send the confirmation email
-            transporter.sendMail(mailOptions, (error, info) => {
-                if (error) {
-                    console.error("Ошибка отправки электронной почты:", error);
-                    return res.status(500).json({ error: "Ошибка отправки электронной почты" });
-                } else {
-                    return res.json({ message: "Подтверждение регистрации отправлено на вашу почту" });
-                }
-            });
-        } catch (error) {
-            console.error("Ошибка регистрации:", error);
-            res.status(500).json({ error: "Ошибка регистрации" });
-        }
-    },
+		try {
+			const { email, password } = req.body;
+	
+			// Check if the user already exists
+			const existingUser = await sql`SELECT * FROM "users" WHERE email = ${email}`;
+	
+			if (existingUser.length > 0) {
+				const user = existingUser[0];
+				if (!user.is_confirmed) {
+					return res.status(200).json({ message: "Подтвердите почту" });
+				}
+				return res.status(200).json({ message: "Этот пользователь уже зарегистрирован" });
+			}
+	
+			// Hash the password
+			const hash = await bcrypt.hash(password, 10);
+			const confirmToken = v4().split("-")[0]; // Generate a confirmation token
+	
+			// Insert the new user into the database
+			await sql`
+				INSERT INTO "users" (email, password, is_confirmed, confirm_token, registerDate, amountOrders)
+				VALUES (${email}, ${hash}, ${false}, ${confirmToken}, CURRENT_TIMESTAMP, 0)
+			`;
+	
+			// Retrieve the name from the main table
+			const mainResult = await sql`SELECT name FROM "main" WHERE id = 1`; // Assuming there's always a record with id 1
+			
+			// Check if a name was retrieved
+			const startupName = mainResult.length > 0 ? mainResult[0].name : "Shop name";
+	
+			// Email body for confirmation
+			const mailBody = `
+				<div>
+					<h1 style='color: #111'>${startupName}</h1>
+					<h2>Ваш <i style='color: #111'>код</i> для подтверждения почты:</h2>
+					<br/> 
+					<h3><b style='color: #ccc' class='token'>${confirmToken}</b></h3>
+				</div>
+			`;
+	
+			// Mail options
+			const mailOptions = {
+				from: "Webi",
+				to: email,
+				html: mailBody,
+				subject: "Подтверждение почты",
+			};
+	
+			// Send the confirmation email
+			transporter.sendMail(mailOptions, (error, info) => {
+				if (error) {
+					console.error("Ошибка отправки электронной почты:", error);
+					return res.status(500).json({ error: "Ошибка отправки электронной почты" });
+				} else {
+					return res.json({ message: "Подтверждение регистрации отправлено на вашу почту" });
+				}
+			});
+		} catch (error) {
+			console.error("Ошибка регистрации:", error);
+			res.status(500).json({ error: "Ошибка регистрации" });
+		}
+	},
 	confirmEmail: async (req, res) => {
 		try {
 			const { email: userEmail, confirmToken } = req.body;
@@ -233,38 +239,43 @@ const authController = {
 	supportRequest: async (req, res) => {
 		try {
 			const { email, body, name } = req.body;
+	
+			// Retrieve the name from the main table
+			const mainResult = await sql`SELECT name FROM "main" WHERE id = 1`; // Assuming there's always a record with id 1
+			
+			// Check if a name was retrieved
+			const startupName = mainResult.length > 0 ? mainResult[0].name : "Shop name";
+	
+			// Construct the email body dynamically with the retrieved name
 			const mailBody = `
-			<div>
-				<h1 style='color: #6f4ff2'>WEBI Marketplace</h1>
-		
-				<h2>Name: <span style='color: #6f4ff2'>${name}</span></h2>
-				<h2>Email: <span style='color: #6f4ff2'>${email}</span></h2>
-				<h2>Body: <span style='color: #6f4ff2'>${body}</span></h2>
-			</div>
-		`;
-
+				<div>
+					<h1 style='color: #6f4ff2'>${startupName}</h1>
+					<h2>Name: <span style='color: #6f4ff2'>${name}</span></h2>
+					<h2>Email: <span style='color: #6f4ff2'>${email}</span></h2>
+					<h2>Body: <span style='color: #6f4ff2'>${body}</span></h2>
+				</div>
+			`;
+	
 			const mailOptions = {
 				from: "Webi",
 				to: "webisupagency@gmail.com",
 				html: mailBody,
 				subject: "Обращение в поддержку",
 			};
-
+	
 			transporter.sendMail(mailOptions, (error, info) => {
 				if (error) {
 					console.error("Ошибка отправки электронной почты:", error);
-					res.status(500).json({
+					return res.status(500).json({
 						error: "Ошибка отправки электронной почты",
 					});
 				} else {
-					res.json({
-						message:
-							"Код для восстановление пароля отправлен на вашу почту",
+					return res.json({
+						message: "Код для восстановление пароля отправлен на вашу почту",
 					});
 				}
 			});
-
-			res.json({ message: "Обращение успешно отправлено" });
+	
 		} catch (error) {
 			console.error("Ошибка регистрации:", error);
 			res.status(500).json({ error: "Ошибка регистрации" });

@@ -92,10 +92,10 @@ const adminController = {
         try {
             const mainRecords = await sql`SELECT * FROM main`;
             if (mainRecords.length === 0) {
-                return res.status(200).json({ message: "Записи 'Главная' не найдены" });
+                return res.status(200).json({ message: "Записи 'Главная' не найдены", isCreated: false });
             }
 
-            res.status(200).json({ main: mainRecords });
+            res.status(200).json({ main: mainRecords, isCreated: true });
         } catch (error) {
             console.log(error);
             res.status(500).json({ error: "Ошибка при получении списка записей 'Главная'" });
@@ -119,6 +119,32 @@ const adminController = {
         } catch (error) {
             console.log(error);
             res.status(500).json({ error: "Ошибка при создании категории" });
+        }
+    },
+    
+    updateCategory: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { name } = req.body;
+    
+            if (!id || !name) {
+                return res.status(400).json({ message: "ID and name are required" });
+            }
+    
+            const result = await sql`
+                UPDATE categories
+                SET name = ${name}
+                WHERE id = ${id}
+                RETURNING *`;
+    
+            if (result.length === 0) {
+                return res.status(404).json({ message: "Category not found" });
+            }
+    
+            res.status(200).json({ category: result[0] });
+        } catch (error) {
+            console.log(error);
+            res.status(500).json({ error: "Error updating category" });
         }
     },
 

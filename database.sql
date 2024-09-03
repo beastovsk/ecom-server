@@ -4,14 +4,6 @@ CREATE TABLE Users (
     password VARCHAR(255) NOT NULL,
     is_confirmed BOOLEAN DEFAULT FALSE,
     confirm_token VARCHAR(255),
-);
-
-CREATE TABLE Users (
-    id SERIAL PRIMARY KEY,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    is_confirmed BOOLEAN DEFAULT FALSE,
-    confirm_token VARCHAR(255),
     registerDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  
     amountOrders INT DEFAULT 0 
 );

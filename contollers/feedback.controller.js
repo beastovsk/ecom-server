@@ -19,7 +19,7 @@ const feedbackController = {
                 return res.status(400).json({ message: "Missing required fields" });
             }
 
-            const result = await sql`
+            const result = await sql`ац
                 INSERT INTO feedback (user_id, name, email, text)
                 VALUES (${userId}, ${name}, ${feedbackEmail}, ${text})
                 RETURNING *`;

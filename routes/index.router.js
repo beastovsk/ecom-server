@@ -38,6 +38,7 @@ router.post("/admin/createMain", adminController.createMain);
 router.post("/admin/updateMain/:id", adminController.updateMain);
 router.get("/admin/getMain", adminController.getMain);
 router.post("/admin/createCategory", adminController.createCategory);
+router.post("/admin/updateCategory/:id", adminController.updateCategory);
 router.delete("/admin/deleteCategory/:id", adminController.deleteCategory);
 router.get("/admin/getCategories", adminController.getCategories);
 router.post("/admin/createBanner", adminController.createBanner);
