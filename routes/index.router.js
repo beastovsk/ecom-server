@@ -31,6 +31,7 @@ router.get("/orders/:id", orderController.getOrderById);
 router.get("/blog/getAllBlogs", blogController.getAllBlogs);
 router.post("/blog/createBlog", blogController.createBlog);
 router.put("/blog/updateBlog/:id", blogController.updateBlog);
+router.get("/blog/getBlogById/:id", blogController.getBlogById);
 router.delete("/blog/deleteBlog/:id", blogController.deleteBlog);
 router.get("/feedback/getAllFeedbacks", feedbackController.getAllFeedbacks);
 router.post("/feedback/createFeedback", feedbackController.createFeedback);
@@ -46,6 +47,7 @@ router.delete("/admin/deleteBanner/:id", adminController.deleteBanner);
 router.get("/admin/getBanners", adminController.getBanners);
 router.post("/admin/createDocument", adminController.createDocument);
 router.post("/admin/updateDocument/:id", adminController.updateDocument);
+router.delete("/admin/deleteDocument/:id", adminController.deleteDocument);
 router.get("/admin/getDocuments", adminController.getDocuments);
 
 module.exports = router;

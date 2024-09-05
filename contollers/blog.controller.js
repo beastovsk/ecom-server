@@ -57,6 +57,23 @@ const blogController = {
 		}
 	},
 
+	getBlogById: async (req, res) => {
+		try {
+			const { id } = req.params;
+
+			const blog =
+				await sql`SELECT * FROM "blogs" WHERE id = ${id}`;
+			if (blog.length === 0) {
+				return res.status(404).json({ message: "Blog not found" });
+			}
+
+			res.status(200).json(blog[0]);
+		} catch (error) {
+			console.error(error);
+			res.status(500).json({ message: "Internal Server Error" });
+		}
+	},
+
 	updateBlog: async (req, res) => {
 		try {
 			const { id } = req.params;
