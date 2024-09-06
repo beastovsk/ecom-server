@@ -205,7 +205,7 @@ const adminController = {
 			if (categories.length === 0) {
 				return res
 					.status(200)
-					.json({ message: "Категории не найдены" });
+					.json({ message: "Категории не найдены", categories: [] });
 			}
 
 			res.status(200).json({ categories });
@@ -283,7 +283,9 @@ const adminController = {
 		try {
 			const banners = await sql`SELECT * FROM banners`;
 			if (banners.length === 0) {
-				return res.status(200).json({ message: "Баннеры не найдены" });
+				return res
+					.status(200)
+					.json({ message: "Баннеры не найдены", banners: [] });
 			}
 
 			res.status(200).json({ banners });
@@ -368,7 +370,7 @@ const adminController = {
 			if (documents.length === 0) {
 				return res
 					.status(200)
-					.json({ message: "Документы не найдены" });
+					.json({ message: "Документы не найдены", documents: [] });
 			}
 
 			res.status(200).json({ documents });

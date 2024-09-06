@@ -34,7 +34,9 @@ const orderСontroller = {
                 SELECT * FROM "products"`;
 
 			if (result.length === 0) {
-				return res.status(200).json({ message: "Продукты не найдены" });
+				return res
+					.status(200)
+					.json({ message: "Продукты не найдены", products: [] });
 			}
 
 			res.json({ products: result });
