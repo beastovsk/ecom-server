@@ -14,6 +14,7 @@ const corsOptions = {
 		"http://localhost:3000",
 		"http://127.0.0.1:3000",
 		"https://skills4it.ru",
+		"https://front-957zu7zk9-bibis-projects-77311691.vercel.app/",
 	],
 	credentials: true,
 	methods: ["GET", "POST", "DELETE", "PATCH", "PUT"],
