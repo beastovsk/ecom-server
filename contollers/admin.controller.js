@@ -33,14 +33,11 @@ const adminController = {
 				quality: "auto",
 			});
 
-			const logoJson = JSON.stringify({
-				url: uploadedImage.secure_url,
-				public_id: uploadedImage.public_id,
-			});
+			const logoUrl = uploadedImage.secure_url;
 
 			const result = await sql`
                 INSERT INTO main (name, description, logo, seo_tags, address, email, phone, inn)
-                VALUES (${name}, ${description}, ${logoJson}::jsonb, ${seo_tags}, ${address}, ${email}, ${phone}, ${inn})
+                VALUES (${name}, ${description}, ${logoUrl}, ${seo_tags}, ${address}, ${email}, ${phone}, ${inn})
                 RETURNING *`;
 
 			res.status(201).json({ main: result[0] });
@@ -73,7 +70,7 @@ const adminController = {
 					.json({ message: "Запись 'Главная' не найдена" });
 			}
 
-			let logoJson;
+			let logoUrl;
 			if (logo) {
 				const uploadedImage = await cloudinary.uploader.upload(logo, {
 					folder: "main_images",
@@ -82,10 +79,7 @@ const adminController = {
 					quality: "auto",
 				});
 
-				logoJson = JSON.stringify({
-					url: uploadedImage.secure_url,
-					public_id: uploadedImage.public_id,
-				});
+				logoUrl = uploadedImage.secure_url;
 			}
 
 			const result = await sql`
@@ -93,8 +87,8 @@ const adminController = {
                 SET
                     name = ${name || mainResult[0].name},
                     description = ${description || mainResult[0].description},
-                    logo = ${logoJson ? logoJson : mainResult[0].logo}::jsonb,
-                    seo_tags = ${seo_tags || mainResult[0].seo_tags}::json,
+                    logo = ${logoUrl ? logoUrl : mainResult[0].logo},
+                    seo_tags = ${seo_tags || mainResult[0].seo_tags},
                     address = ${address || mainResult[0].address},
                     email = ${email || mainResult[0].email},
                     phone = ${phone || mainResult[0].phone},
