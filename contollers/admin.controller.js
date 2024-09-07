@@ -23,7 +23,14 @@ const adminController = {
 			} = req.body;
 
 			if (!name) {
-				return res.status(400).json({ message: "Name is required" });
+				return res
+					.status(400)
+					.json({ message: "Нет названия магазина" });
+			}
+			if (!logo) {
+				return res
+					.status(400)
+					.json({ message: "Нет логотипа магазина" });
 			}
 
 			const uploadedImage = await cloudinary.uploader.upload(logo, {
@@ -40,11 +47,14 @@ const adminController = {
                 VALUES (${name}, ${description}, ${logoUrl}, ${seo_tags}, ${address}, ${email}, ${phone}, ${inn})
                 RETURNING *`;
 
-			res.status(201).json({ main: result[0] });
+			res.status(201).json({
+				main: result[0],
+				message: "Успешно заполнено",
+			});
 		} catch (error) {
 			console.log(error);
 			res.status(500).json({
-				error: "Ошибка при создании записи 'Главная'",
+				message: "Ошибка при создании записи 'Главная'",
 			});
 		}
 	},
@@ -96,11 +106,14 @@ const adminController = {
                 WHERE id = ${id}
                 RETURNING *`;
 
-			res.status(200).json({ main: result[0] });
+			res.status(200).json({
+				main: result[0],
+				message: "Успешно заполнено",
+			});
 		} catch (error) {
 			console.log(error);
 			res.status(500).json({
-				error: "Ошибка при обновлении записи 'Главная'",
+				message: "Ошибка при обновлении записи 'Главная'",
 			});
 		}
 	},
