@@ -17,8 +17,8 @@ const blogController = {
 				folder: "main_images",
 				fetch_format: "jpg",
 				quality: "auto:good",
-                width: "2048",
-                height: "1152"
+				width: "2048",
+				height: "1152",
 			});
 
 			const imageJson = JSON.stringify({
@@ -62,8 +62,7 @@ const blogController = {
 		try {
 			const { id } = req.params;
 
-			const blog =
-				await sql`SELECT * FROM "blogs" WHERE id = ${id}`;
+			const blog = await sql`SELECT * FROM "blogs" WHERE id = ${id}`;
 			if (blog.length === 0) {
 				return res.status(404).json({ message: "Blog not found" });
 			}
@@ -82,11 +81,10 @@ const blogController = {
 
 			const uploadedImage = await cloudinary.uploader.upload(images, {
 				folder: "main_images",
-				public_id: name,
 				fetch_format: "jpg",
 				quality: "auto:good",
-                width: "500",
-                height: "500"
+				width: "2048",
+				height: "1152",
 			});
 
 			const imageJson = JSON.stringify({
