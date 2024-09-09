@@ -23,7 +23,8 @@ CREATE TABLE blogs (
     id SERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     images JSON,
-    content TEXT
+    content TEXT,
+    tags TEXT
 );
 
 CREATE TABLE orders (
@@ -50,7 +51,7 @@ CREATE TABLE main (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
-    logo VARCHAR(255), 
+    logo TEXT, 
     seo_tags VARCHAR(255),
     address VARCHAR(255),
     email VARCHAR(255),
@@ -61,7 +62,7 @@ CREATE TABLE main (
 CREATE TABLE banners (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    img VARCHAR(255)
+    img TEXT
 );
 
 CREATE TABLE documents (

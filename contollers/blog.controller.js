@@ -14,10 +14,12 @@ const blogController = {
 			const { title, content, images, tags } = req.body;
 
 			const uploadedImage = await cloudinary.uploader.upload(images, {
-				folder: "blog_images",
-				public_id: title,
-				fetch_format: "auto",
-				quality: "auto",
+				folder: "main_images",
+				public_id: name,
+				fetch_format: "jpg",
+				quality: "auto:good",
+                width: "500",
+                height: "500"
 			});
 
 			const imageJson = JSON.stringify({
@@ -80,10 +82,12 @@ const blogController = {
 			const { title, content, images } = req.body;
 
 			const uploadedImage = await cloudinary.uploader.upload(images, {
-				folder: "blog_images",
-				public_id: title,
-				fetch_format: "auto",
-				quality: "auto",
+				folder: "main_images",
+				public_id: name,
+				fetch_format: "jpg",
+				quality: "auto:good",
+                width: "500",
+                height: "500"
 			});
 
 			const imageJson = JSON.stringify({

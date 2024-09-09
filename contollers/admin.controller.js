@@ -36,8 +36,10 @@ const adminController = {
 			const uploadedImage = await cloudinary.uploader.upload(logo, {
 				folder: "main_images",
 				public_id: name,
-				fetch_format: "auto",
-				quality: "auto",
+				fetch_format: "jpg",
+				quality: "auto:good",
+                width: "500",
+                height: "500"
 			});
 
 			const logoUrl = uploadedImage.secure_url;
@@ -84,9 +86,11 @@ const adminController = {
 			if (logo) {
 				const uploadedImage = await cloudinary.uploader.upload(logo, {
 					folder: "main_images",
-					public_id: name,
-					fetch_format: "auto",
-					quality: "auto",
+				    public_id: name,
+				    fetch_format: "jpg",
+				    quality: "auto:good",
+                    width: "500",
+                    height: "500"
 				});
 
 				logoUrl = uploadedImage.secure_url;
@@ -241,10 +245,12 @@ const adminController = {
 			}
 
 			const uploadedImage = await cloudinary.uploader.upload(img, {
-				folder: "banner_images",
+                folder: "main_images",
 				public_id: name,
-				fetch_format: "auto",
-				quality: "auto",
+				fetch_format: "jpg",
+				quality: "auto:good",
+                width: "500",
+                height: "500"
 			});
 
 			if (!uploadedImage || !uploadedImage.secure_url) {
