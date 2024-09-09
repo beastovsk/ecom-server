@@ -249,8 +249,8 @@ const adminController = {
 				public_id: name,
 				fetch_format: "jpg",
 				quality: "auto:good",
-                width: "500",
-                height: "500"
+                width: "2048",
+                height: "1152"
 			});
 
 			if (!uploadedImage || !uploadedImage.secure_url) {
