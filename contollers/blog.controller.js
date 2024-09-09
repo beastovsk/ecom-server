@@ -17,8 +17,8 @@ const blogController = {
 				folder: "main_images",
 				fetch_format: "jpg",
 				quality: "auto:good",
-                width: "500",
-                height: "500"
+                width: "2048",
+                height: "1152"
 			});
 
 			const imageJson = JSON.stringify({
