@@ -15,7 +15,6 @@ const blogController = {
 
 			const uploadedImage = await cloudinary.uploader.upload(images, {
 				folder: "main_images",
-				public_id: name,
 				fetch_format: "jpg",
 				quality: "auto:good",
                 width: "500",
