@@ -150,7 +150,10 @@ const adminController = {
                 VALUES (${name})
                 RETURNING *`;
 
-			res.status(201).json({ category: result[0] });
+			res.status(201).json({
+				category: result[0],
+				message: "Категория успешно создана",
+			});
 		} catch (error) {
 			console.log(error);
 			res.status(500).json({ error: "Ошибка при создании категории" });
@@ -178,7 +181,10 @@ const adminController = {
 				return res.status(404).json({ message: "Category not found" });
 			}
 
-			res.status(200).json({ category: result[0] });
+			res.status(200).json({
+				category: result[0],
+				message: "Категория успешно изменена",
+			});
 		} catch (error) {
 			console.log(error);
 			res.status(500).json({ error: "Error updating category" });
@@ -252,7 +258,10 @@ const adminController = {
                 VALUES (${name}, ${uploadedImage.secure_url})
                 RETURNING *`;
 
-			res.status(201).json({ banner: result[0] });
+			res.status(201).json({
+				banner: result[0],
+				message: "Баннер успешно создан",
+			});
 		} catch (error) {
 			console.log(error);
 			res.status(500).json({ error: "Ошибка при создании баннера" });
@@ -320,7 +329,10 @@ const adminController = {
                 VALUES (${name}, ${content})
                 RETURNING *`;
 
-			res.status(201).json({ document: result[0] });
+			res.status(201).json({
+				document: result[0],
+				message: "Документ успешно создан",
+			});
 		} catch (error) {
 			console.log(error);
 			res.status(500).json({ error: "Ошибка при создании документа" });
@@ -334,7 +346,12 @@ const adminController = {
 			const documentResult =
 				await sql`SELECT * FROM documents WHERE id = ${id}`;
 			if (documentResult.length === 0) {
-				return res.status(404).json({ message: "Документ не найден" });
+				return res
+					.status(404)
+					.json({
+						message: "Документ не найден",
+						message: "Документ успешно изменен",
+					});
 			}
 
 			const result = await sql`
